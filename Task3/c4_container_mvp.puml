@@ -1,0 +1,64 @@
+@startuml C4_Container_MVP_Deposits
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Диаграмма контейнеров C4 - MVP открытия депозитов
+
+Person(client, "Клиент банка", "Существующий клиент")
+Person(potential_client, "Потенциальный клиент", "Новый клиент")
+Person(call_center_manager, "Менеджер кол-центра")
+Person(back_office_employee, "Сотрудник бэк-офиса")
+
+System_Boundary(deposit_mvp, "MVP Система открытия депозитов") {
+    Container(api_gateway, "API Gateway", "Kong/Nginx/...", "Маршрутизация запросов, аутентификация, rate limiting")
+    Container(deposit_service, "Сервис депозитов", "ASP NET MVC", "Бизнес-логика обработки заявок на депозиты")
+    ContainerQueue(message_queue, "Очередь сообщений", "Apache Kafka", "Асинхронная обработка заявок")
+    ContainerDb(deposit_db, "База данных депозитов", "MS SQL Server", "Хранение заявок и метаданных")
+}
+
+System_Boundary(internet_bank, "Интернет-банк") {
+    Container(web_app, "Веб-приложение", "ASP.NET MVC 4.5", "Пользовательский интерфейс для клиентов")
+    ContainerDb(internet_bank_db, "База данных", "MS SQL Server", "Данные клиентов и сессий")
+}
+
+System_Boundary(abs_system, "АБС (Автоматизированная банковская система)") {
+    Container(abs_core, "Ядро АБС", "-", "Основная бизнес-логика банковских операций")
+    ContainerDb(abs_db, "База данных АБС", "Oracle", "Основное хранилище банковских данных")
+}
+
+System_Ext(website, "Сайт банка", "Корпоративный сайт")
+System_Ext(call_center_system, "Система кол-центра", "CRM система")
+System_Ext(sms_gateway, "SMS-шлюз", "Внешний провайдер SMS")
+
+' Взаимодействие клиентов
+Rel(potential_client, website, "Просматривает депозиты, подает заявку", "HTTPS")
+Rel(client, web_app, "Просматривает депозиты, подает заявку", "HTTPS")
+
+' Взаимодействие сотрудников
+Rel(call_center_manager, call_center_system, "Обрабатывает заявки")
+Rel(back_office_employee, abs_core, "Обрабатывает заявки")
+Rel(call_center_system, message_queue, "Передает заявки на рассчеты для новых клиентов")
+
+' Интеграции с MVP системой
+Rel(website, call_center_system, "Передает заявки", "HTTPS/REST API")
+Rel(web_app, api_gateway, "Передает заявки", "HTTPS/REST API")
+Rel(message_queue, abs_core, "Передает заявки на открытие депозитов", "Json")
+
+' MVP система
+Rel(api_gateway, deposit_service, "Маршрутизирует запросы", "HTTP")
+Rel(deposit_service, deposit_db, "Чтение\сохранение данных", "SQL")
+Rel(deposit_service, message_queue, "Направляет заявки существующих клиентов", "Kafka")
+Rel(deposit_service, sms_gateway, "Отправляет SMS", "REST API")
+
+' Внутренние связи интернет-банка
+Rel(web_app, internet_bank_db, "Получение данных", "SQL")
+
+' связи АБС
+Rel(abs_core, abs_db, "Операции с данными", "Oracle SQL")
+Rel(abs_core, call_center_system, "Рассчет по заявкам новых клиентов", "HTTP/REST API")
+Rel(abs_core, deposit_service, "Обновление справочных данных", "HTTP/REST API")
+
+' Интеграция интернет-банка с АБС
+Rel(web_app, abs_core, "Получение данных счетов", "REST API")
+
+SHOW_LEGEND()
+@enduml
