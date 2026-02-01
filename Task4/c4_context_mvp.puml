@@ -1,0 +1,43 @@
+@startuml C4_Context_MVP_Deposits
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Диаграмма контекста C4 - MVP открытия депозитов онлайн
+
+Person(client, "Клиент банка", "Существующий клиент, желающий открыть депозит")
+Person(potential_client, "Потенциальный клиент", "Новый клиент, заинтересованный в депозите")
+Person(call_center_manager, "Менеджер кол-центра", "Обрабатывает заявки новых клиентов")
+Person(back_office_employee, "Сотрудник бэк-офиса", "Обрабатывает заявки существующих клиентов")
+Person(call_center_manager_ext, "Менеджер внешнего кол-центра", "Обрабатывает заявки новых клиентов")
+
+System(deposit_system, "Система открытия депозитов онлайн", "MVP автоматизации процесса открытия депозитов")
+
+System(website, "Сайт банка", "Корпоративный сайт для потенциальных клиентов")
+System(internet_bank, "Интернет-банк", "Система онлайн-банкинга для существующих клиентов")
+System(call_center_system, "Система кол-центра", "CRM система для обработки обращений")
+System(abs_system, "АБС", "Автоматизированная банковская система")
+System(sms_system, "СМС-шлюз", "отправка уведомлений")
+System_Ext(telekom_system, "Оператор", "отправка уведомлений")
+
+Rel(potential_client, website, "Просматривает депозиты, подает заявку")
+Rel(client, internet_bank, "Просматривает депозиты, подает заявку")
+Rel(call_center_manager, call_center_system, "Обрабатывает заявки с сайта")
+Rel(back_office_employee, abs_system, "Обрабатывает заявки из интернет-банка")
+
+Rel(website, call_center_system, "Передает заявки потенциальных клиентов", "HTTPS/API")
+Rel(internet_bank, deposit_system, "Передает заявки клиентов", "HTTPS/API")
+Rel(deposit_system, abs_system, "Направляет заявки существующих клиентов", "API")
+Rel(deposit_system, sms_system, "Отправляет уведомления", "API")
+
+Rel(telekom_system, client, "Отправляет SMS-уведомления")
+Rel(telekom_system, potential_client, "Отправляет SMS-уведомления")
+Rel(sms_system, telekom_system, "Отправляет SMS-уведомления")
+
+System_Ext(call_center_system_ext, "Система внешнего кол-центра")
+System(sftp_integration_system, "Система интграции с SFTP")
+Rel(website, call_center_system_ext, "Передает заявки потенциальных клиентов", "HTTPS/API")
+Rel(call_center_manager_ext, call_center_system_ext, "Обрабатывает заявки с сайта")
+Rel(abs_system, sftp_integration_system, "Передает ставки для дальнейшей передачи во внешний кол-центр")
+Rel(sftp_integration_system, call_center_system_ext, "Передает ставки на ресурсы внешнего кол-центра")
+
+SHOW_LEGEND()
+@enduml
